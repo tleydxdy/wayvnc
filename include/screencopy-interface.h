@@ -31,7 +31,8 @@ enum screencopy_result {
 };
 
 typedef void (*screencopy_done_fn)(enum screencopy_result,
-		struct wv_buffer*, void* userdata);
+		struct wv_buffer* buffer, struct wv_buffer* cursor,
+		void* userdata);
 
 struct screencopy_impl {
 	struct screencopy* (*create)(void* manager, struct wl_output*,

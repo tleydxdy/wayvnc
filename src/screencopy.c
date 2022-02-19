@@ -57,7 +57,7 @@ struct wlr_screencopy {
 
 	void* userdata;
 	void (*on_done)(enum screencopy_result, struct wv_buffer*,
-			void* userdata);
+			struct wv_buffer*, void* userdata);
 
 	uint64_t last_time;
 	uint64_t start_time;
@@ -149,7 +149,7 @@ static void screencopy_buffer_done(void* data,
 	if (!buffer) {
 		screencopy__stop(self);
 		self->status = WLR_SCREENCOPY_FATAL;
-		self->on_done(SCREENCOPY_FATAL, NULL, self->userdata);
+		self->on_done(SCREENCOPY_FATAL, NULL, NULL, self->userdata);
 		return;
 	}
 
@@ -223,7 +223,7 @@ static void screencopy_ready(void* data,
 	self->front = NULL;
 
 	self->status = WLR_SCREENCOPY_DONE;
-	self->on_done(SCREENCOPY_DONE, self->back, self->userdata);
+	self->on_done(SCREENCOPY_DONE, self->back, NULL, self->userdata);
 
 	self->back = NULL;
 }
@@ -242,7 +242,7 @@ static void screencopy_failed(void* data,
 	self->front = NULL;
 
 	self->status = WLR_SCREENCOPY_FAILED;
-	self->on_done(SCREENCOPY_FAILED, NULL, self->userdata);
+	self->on_done(SCREENCOPY_FAILED, NULL, NULL, self->userdata);
 }
 
 static void screencopy_damage(void* data,
