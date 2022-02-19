@@ -109,7 +109,6 @@ struct wv_buffer* wv_buffer_create_shm(int width,
 
 	LIST_INSERT_HEAD(&buffer_registry, self, registry_link);
 
-
 	close(fd);
 	return self;
 
@@ -173,6 +172,9 @@ static struct wv_buffer* wv_buffer_create_dmabuf(int width, int height,
 	}
 
 	nvnc_set_userdata(self->nvnc_fb, self, NULL);
+
+	pixman_region_init(&self->frame_damage);
+	pixman_region_init_rect(&self->buffer_damage, 0, 0, width, height);
 
 	LIST_INSERT_HEAD(&buffer_registry, self, registry_link);
 
