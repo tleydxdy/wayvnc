@@ -63,6 +63,10 @@ struct wv_buffer {
 
 	/* The following is only applicable to DMABUF */
 	struct gbm_bo* bo;
+
+	/* The following is only applicable to cursors */
+	int16_t x_hotspot;
+	int16_t y_hotspot;
 };
 
 TAILQ_HEAD(wv_buffer_queue, wv_buffer);
