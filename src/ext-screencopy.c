@@ -275,6 +275,12 @@ static void surface_handle_ready(void *data,
 		wv_buffer_registry_damage_all(&self->cursor_buffer->frame_damage,
 				WV_BUFFER_DOMAIN_CURSOR);
 		pixman_region_clear(&self->cursor_buffer->buffer_damage);
+
+		if (!self->have_cursor) {
+			wv_buffer_pool_release(self->cursor_pool,
+					self->cursor_buffer);
+			self->cursor_buffer = NULL;
+		}
 	}
 
 	struct wv_buffer* buffer = self->buffer;
