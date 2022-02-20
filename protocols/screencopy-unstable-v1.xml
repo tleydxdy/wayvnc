@@ -43,12 +43,22 @@
       source.
     </description>
 
+    <enum name="options" bitfield="true">
+      <entry name="none" value="0"/>
+      <entry name="render_cursors" value="1"/>
+    </enum>
+
     <request name="capture_output">
       <description summary="capture an output">
         Create a capturing surface for an output
+
+        If the "render_cursors" flag is set, cursors shall be composited onto
+        the main surface. Otherwise, the compositor should try to leave them
+        out, if possible.
       </description>
       <arg name="surface" type="new_id" interface="zext_screencopy_surface_v1"/>
       <arg name="output" type="object" interface="wl_output"/>
+      <arg name="options" type="uint" enum="options"/>
     </request>
   </interface>
 
@@ -88,7 +98,6 @@
     <enum name="options" bitfield="true">
       <entry name="none" value="0"/>
       <entry name="immediate" value="1"/>
-      <entry name="render_cursors" value="2"/>
     </enum>
 
     <enum name="buffer_type">
@@ -191,10 +200,6 @@
 
         If the "immediate" flag is set, the compositor must present a frame to
         the client as soon as possible.
-
-        If the "render_cursors" flag is set, cursors shall be composited onto the
-        main surface. Otherwise, the compositor should try to leave them out, if
-        possible.
       </description>
       <arg name="options" type="uint" enum="options"/>
     </request>
@@ -259,7 +264,9 @@
         If the cursor image has changed, the cursor buffer will have been
         updated and the "has_damage" argument will be set to 1; otherwise 0.
 
-        The hotspot position is relative to the cursor buffer.
+        The given position is the position of the cursor's hotspot and it is
+        relative to the main buffer's top left corner in buffer pixel
+        coordinates.
       </description>
       <arg name="seat_name" type="string" summary="seat name"/>
       <arg name="has_damage" type="int" summary="buffer has changes"/>

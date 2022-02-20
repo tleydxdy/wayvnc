@@ -71,8 +71,14 @@ static int ext_screencopy_init_surface(struct ext_screencopy* self)
 	if (self->surface)
 		zext_screencopy_surface_v1_destroy(self->surface);
 
+	enum zext_screencopy_manager_v1_options options =
+		ZEXT_SCREENCOPY_MANAGER_V1_OPTIONS_NONE;
+
+	if (self->render_cursors)
+		options |= ZEXT_SCREENCOPY_MANAGER_V1_OPTIONS_RENDER_CURSORS;
+
 	self->surface = zext_screencopy_manager_v1_capture_output(self->manager,
-			self->wl_output);
+			self->wl_output, options);
 	if (!self->surface)
 		return -1;
 
@@ -110,9 +116,6 @@ static void ext_screencopy_schedule_capture(struct ext_screencopy* self,
 
 	if (immediate)
 		flags |= ZEXT_SCREENCOPY_SURFACE_V1_OPTIONS_IMMEDIATE;
-
-	if (self->render_cursors)
-		flags |= ZEXT_SCREENCOPY_SURFACE_V1_OPTIONS_RENDER_CURSORS;
 
 	if (self->cursor_pool->type) {
 		self->cursor_buffer = wv_buffer_pool_acquire(self->cursor_pool);
