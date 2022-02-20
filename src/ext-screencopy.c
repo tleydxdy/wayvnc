@@ -417,6 +417,7 @@ static struct screencopy* ext_screencopy_create(void* manager,
 	self->wl_output = output;
 	self->on_done = on_done;
 	self->userdata = userdata;
+	self->render_cursors = render_cursor;
 
 	self->pool = wv_buffer_pool_create(0, 0, 0, 0, 0);
 	if (!self->pool)
