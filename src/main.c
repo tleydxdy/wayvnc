@@ -630,8 +630,9 @@ void wayvnc_process_frame(struct wayvnc* self, struct wv_buffer* buffer,
 	nvnc_display_feed_buffer(self->nvnc_display, buffer->nvnc_fb,
 			&damage);
 	if (cursor)
-		nvnc_set_cursor(self->nvnc, cursor->nvnc_fb, cursor->x_hotspot,
-				cursor->y_hotspot, &cursor->frame_damage);
+		nvnc_set_cursor(self->nvnc, cursor->nvnc_fb,
+				cursor->cursor_width, cursor->cursor_height,
+				cursor->x_hotspot, cursor->y_hotspot);
 
 	pixman_region_fini(&damage);
 

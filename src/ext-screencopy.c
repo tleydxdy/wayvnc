@@ -148,15 +148,15 @@ static void surface_handle_buffer_info(void *data,
 		self->output.wl_shm_stride = stride;
 		log_debug("Got shm buffer\n");
 		break;
-#ifdef ENABLE_SCREENCOPY_DMABUF
 	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
+#ifdef ENABLE_SCREENCOPY_DMABUF
 		self->output.have_linux_dmabuf = true;
 		self->output.dmabuf_format = format;
 		self->output.dmabuf_width = width;
 		self->output.dmabuf_height = height;
 		log_debug("Got dmabuf\n");
-		break;
 #endif
+		break;
 	}
 }
 
@@ -176,15 +176,15 @@ static void surface_handle_cursor_buffer_info(void *data,
 		self->cursor.wl_shm_stride = stride;
 		log_debug("Got cursor shm buffer\n");
 		break;
-#ifdef ENABLE_SCREENCOPY_DMABUF
 	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
+#ifdef ENABLE_SCREENCOPY_DMABUF
 		self->cursor.have_linux_dmabuf = true;
 		self->cursor.dmabuf_format = format;
 		self->cursor.dmabuf_width = width;
 		self->cursor.dmabuf_height = height;
 		log_debug("Got cursor dmabuf\n");
-		break;
 #endif
+		break;
 	}
 }
 
@@ -334,6 +334,8 @@ static void surface_handle_cursor_info(void *data,
 		wv_buffer_damage_whole(self->cursor_buffer);
 	}
 
+	self->cursor_buffer->cursor_width = width;
+	self->cursor_buffer->cursor_height = height;
 	self->cursor_buffer->x_hotspot = hotspot_x;
 	self->cursor_buffer->y_hotspot = hotspot_y;
 }
