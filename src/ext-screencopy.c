@@ -53,6 +53,7 @@ struct ext_screencopy {
 	struct {
 		uint32_t wl_shm_width, wl_shm_height, wl_shm_stride, wl_shm_format;
 
+		bool have_wl_shm;
 		bool have_linux_dmabuf;
 		uint32_t dmabuf_width, dmabuf_height, dmabuf_format;
 	} output, cursor;
@@ -145,6 +146,7 @@ static void surface_handle_buffer_info(void *data,
 
 	switch (type) {
 	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
+		self->output.have_wl_shm = true;
 		self->output.wl_shm_format = format;
 		self->output.wl_shm_width = width;
 		self->output.wl_shm_height = height;
@@ -173,6 +175,7 @@ static void surface_handle_cursor_buffer_info(void *data,
 
 	switch (type) {
 	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
+		self->cursor.have_wl_shm = true;
 		self->cursor.wl_shm_format = format;
 		self->cursor.wl_shm_width = width;
 		self->cursor.wl_shm_height = height;
@@ -197,6 +200,14 @@ static void surface_handle_init_done(void *data,
 	struct ext_screencopy* self = data;
 	uint32_t width, height, stride, format;
 	enum wv_buffer_type type = WV_BUFFER_UNSPEC;
+
+	// Enable cursor rendering if cursor capturing is not supported
+	if (!self->render_cursors && !self->cursor.have_wl_shm &&
+			!self->cursor.have_linux_dmabuf) {
+		self->render_cursors = true;
+		ext_screencopy_init_surface(self);
+		return;
+	}
 
 #ifdef ENABLE_SCREENCOPY_DMABUF
 	if (self->output.have_linux_dmabuf) {
@@ -234,8 +245,10 @@ static void surface_handle_init_done(void *data,
 		type = WV_BUFFER_SHM;
 	}
 
-	wv_buffer_pool_resize(self->cursor_pool, type, width, height, stride,
-			format);
+	if (!self->render_cursors) {
+		wv_buffer_pool_resize(self->cursor_pool, type, width, height,
+				stride, format);
+	}
 
 	if (self->should_start) {
 		ext_screencopy_schedule_capture(self, self->shall_be_immediate);
