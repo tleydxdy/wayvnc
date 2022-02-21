@@ -630,14 +630,13 @@ void wayvnc_process_frame(struct wayvnc* self, struct wv_buffer* buffer,
 	nvnc_display_feed_buffer(self->nvnc_display, buffer->nvnc_fb,
 			&damage);
 	if (cursor) {
-		if (pixman_region_not_empty(&cursor->frame_damage)) {
-			nvnc_set_cursor(self->nvnc, cursor->nvnc_fb,
-					cursor->cursor_width,
-					cursor->cursor_height,
-					cursor->x_hotspot, cursor->y_hotspot);
-		}
+		bool is_damaged = pixman_region_not_empty(&cursor->frame_damage);
+		nvnc_set_cursor(self->nvnc, cursor->nvnc_fb,
+				cursor->cursor_width, cursor->cursor_height,
+				cursor->x_hotspot, cursor->y_hotspot,
+				is_damaged);
 	} else {
-		nvnc_set_cursor(self->nvnc, NULL, 0, 0, 0, 0);
+		nvnc_set_cursor(self->nvnc, NULL, 0, 0, 0, 0, true);
 	}
 
 	pixman_region_fini(&damage);
