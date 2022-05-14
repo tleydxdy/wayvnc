@@ -36,7 +36,7 @@
 #include <fcntl.h>
 
 #include "wlr-screencopy-unstable-v1.h"
-#include "screencopy-unstable-v1.h"
+#include "ext-screencopy-v1.h"
 #include "wlr-virtual-pointer-unstable-v1.h"
 #include "virtual-keyboard-unstable-v1.h"
 #include "xdg-output-unstable-v1.h"
@@ -81,7 +81,7 @@ struct wayvnc {
 	struct zwp_virtual_keyboard_manager_v1* keyboard_manager;
 	struct zwlr_virtual_pointer_manager_v1* pointer_manager;
 	struct zwlr_screencopy_manager_v1* screencopy_manager;
-	struct zext_screencopy_manager_v1* ext_screencopy_manager;
+	struct ext_screencopy_manager_v1* ext_screencopy_manager;
 
 	const struct output* selected_output;
 	const struct seat* selected_seat;
@@ -164,10 +164,10 @@ static void registry_add(void* data, struct wl_registry* registry,
 	}
 
 #if 1
-	if (strcmp(interface, zext_screencopy_manager_v1_interface.name) == 0) {
+	if (strcmp(interface, ext_screencopy_manager_v1_interface.name) == 0) {
 		self->ext_screencopy_manager =
 			wl_registry_bind(registry, id,
-					 &zext_screencopy_manager_v1_interface,
+					 &ext_screencopy_manager_v1_interface,
 					 MIN(1, version));
 		return;
 	}
@@ -319,7 +319,7 @@ void wayvnc_destroy(struct wayvnc* self)
 	if (self->screencopy_manager)
 		zwlr_screencopy_manager_v1_destroy(self->screencopy_manager);
 	if (self->ext_screencopy_manager)
-		zext_screencopy_manager_v1_destroy(self->ext_screencopy_manager);
+		ext_screencopy_manager_v1_destroy(self->ext_screencopy_manager);
 	if (self->data_control.manager)
 		zwlr_data_control_manager_v1_destroy(self->data_control.manager);
 
@@ -981,7 +981,7 @@ int main(int argc, char* argv[])
 		if (!self.screencopy)
 			goto screencopy_failure;
 
-		log_debug("Using zext_screencopy_unstable_v1\n");
+		log_debug("Using ext_screencopy_unstable_v1\n");
 
 		self.screencopy->rate_limit = max_rate;
 	} else if (self.screencopy_manager) {

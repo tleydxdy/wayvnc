@@ -26,7 +26,7 @@
 #include <neatvnc.h>
 
 #include "screencopy-interface.h"
-#include "screencopy-unstable-v1.h"
+#include "ext-screencopy-v1.h"
 #include "buffer.h"
 #include "shm.h"
 #include "time-util.h"
@@ -37,9 +37,9 @@
 
 struct ext_screencopy {
 	struct screencopy parent;
-	struct zext_screencopy_manager_v1* manager;
+	struct ext_screencopy_manager_v1* manager;
 	struct wl_output* wl_output;
-	struct zext_screencopy_surface_v1* surface;
+	struct ext_screencopy_surface_v1* surface;
 	bool render_cursors;
 	struct wv_buffer_pool* pool;
 	struct wv_buffer* buffer;
@@ -65,24 +65,24 @@ struct ext_screencopy {
 
 struct screencopy_impl ext_screencopy_impl;
 
-static struct zext_screencopy_surface_v1_listener surface_listener;
+static struct ext_screencopy_surface_v1_listener surface_listener;
 
 static int ext_screencopy_init_surface(struct ext_screencopy* self)
 {
 	if (self->surface)
-		zext_screencopy_surface_v1_destroy(self->surface);
+		ext_screencopy_surface_v1_destroy(self->surface);
 
-	enum zext_screencopy_manager_v1_options options = 0;
+	enum ext_screencopy_manager_v1_options options = 0;
 
 	if (self->render_cursors)
-		options |= ZEXT_SCREENCOPY_MANAGER_V1_OPTIONS_RENDER_CURSORS;
+		options |= EXT_SCREENCOPY_MANAGER_V1_OPTIONS_RENDER_CURSORS;
 
-	self->surface = zext_screencopy_manager_v1_capture_output(self->manager,
+	self->surface = ext_screencopy_manager_v1_capture_output(self->manager,
 			self->wl_output, options);
 	if (!self->surface)
 		return -1;
 
-	zext_screencopy_surface_v1_add_listener(self->surface,
+	ext_screencopy_surface_v1_add_listener(self->surface,
 			&surface_listener, self);
 
 	return 0;
@@ -95,7 +95,7 @@ static void ext_screencopy_schedule_capture(struct ext_screencopy* self,
 	self->buffer = wv_buffer_pool_acquire(self->pool);
 	self->buffer->domain = WV_BUFFER_DOMAIN_OUTPUT;
 
-	zext_screencopy_surface_v1_attach_buffer(self->surface,
+	ext_screencopy_surface_v1_attach_buffer(self->surface,
 			self->buffer->wl_buffer);
 
 	int n_rects = 0;
@@ -108,43 +108,43 @@ static void ext_screencopy_schedule_capture(struct ext_screencopy* self,
 		uint32_t width = rects[i].x2 - x;
 		uint32_t height = rects[i].y2 - y;
 
-		zext_screencopy_surface_v1_damage_buffer(self->surface, x, y,
+		ext_screencopy_surface_v1_damage_buffer(self->surface, x, y,
 				width, height);
 	}
 
 	uint32_t flags = 0;
 
 	if (!immediate)
-		flags |= ZEXT_SCREENCOPY_SURFACE_V1_OPTIONS_ON_DAMAGE;
+		flags |= EXT_SCREENCOPY_SURFACE_V1_OPTIONS_ON_DAMAGE;
 
 	if (self->cursor_pool->type) {
 		self->cursor_buffer = wv_buffer_pool_acquire(self->cursor_pool);
 		self->cursor_buffer->domain = WV_BUFFER_DOMAIN_CURSOR;
 
 		if (pixman_region_not_empty(&self->cursor_buffer->buffer_damage))
-			zext_screencopy_surface_v1_damage_cursor_buffer(
+			ext_screencopy_surface_v1_damage_cursor_buffer(
 					self->surface, "default");
 
-		zext_screencopy_surface_v1_attach_cursor_buffer(self->surface,
+		ext_screencopy_surface_v1_attach_cursor_buffer(self->surface,
 				self->cursor_buffer->wl_buffer, "default");
 	}
 
-	zext_screencopy_surface_v1_commit(self->surface, flags);
+	ext_screencopy_surface_v1_commit(self->surface, flags);
 
 //	log_debug("Committed buffer%s: %p\n", immediate ? " immediately" : "",
 //			self->buffer);
 }
 
 static void surface_handle_buffer_info(void *data,
-		struct zext_screencopy_surface_v1 *surface,
-		enum zext_screencopy_surface_v1_buffer_type type,
+		struct ext_screencopy_surface_v1 *surface,
+		enum ext_screencopy_surface_v1_buffer_type type,
 		uint32_t format, uint32_t width, uint32_t height,
 		uint32_t stride)
 {
 	struct ext_screencopy* self = data;
 
 	switch (type) {
-	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
+	case EXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
 		self->output.have_wl_shm = true;
 		self->output.wl_shm_format = format;
 		self->output.wl_shm_width = width;
@@ -152,7 +152,7 @@ static void surface_handle_buffer_info(void *data,
 		self->output.wl_shm_stride = stride;
 		log_debug("Got shm buffer\n");
 		break;
-	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
+	case EXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
 #ifdef ENABLE_SCREENCOPY_DMABUF
 		self->output.have_linux_dmabuf = true;
 		self->output.dmabuf_format = format;
@@ -165,15 +165,15 @@ static void surface_handle_buffer_info(void *data,
 }
 
 static void surface_handle_cursor_buffer_info(void *data,
-		struct zext_screencopy_surface_v1 *surface, const char *name,
-		enum zext_screencopy_surface_v1_buffer_type type,
+		struct ext_screencopy_surface_v1 *surface, const char *name,
+		enum ext_screencopy_surface_v1_buffer_type type,
 		uint32_t format, uint32_t width, uint32_t height,
 		uint32_t stride)
 {
 	struct ext_screencopy* self = data;
 
 	switch (type) {
-	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
+	case EXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_WL_SHM:
 		self->cursor.have_wl_shm = true;
 		self->cursor.wl_shm_format = format;
 		self->cursor.wl_shm_width = width;
@@ -181,7 +181,7 @@ static void surface_handle_cursor_buffer_info(void *data,
 		self->cursor.wl_shm_stride = stride;
 		log_debug("Got cursor shm buffer\n");
 		break;
-	case ZEXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
+	case EXT_SCREENCOPY_SURFACE_V1_BUFFER_TYPE_DMABUF:
 #ifdef ENABLE_SCREENCOPY_DMABUF
 		self->cursor.have_linux_dmabuf = true;
 		self->cursor.dmabuf_format = format;
@@ -194,7 +194,7 @@ static void surface_handle_cursor_buffer_info(void *data,
 }
 
 static void surface_handle_init_done(void *data,
-		struct zext_screencopy_surface_v1 *surface)
+		struct ext_screencopy_surface_v1 *surface)
 {
 	struct ext_screencopy* self = data;
 	uint32_t width, height, stride, format;
@@ -262,7 +262,7 @@ static void surface_handle_init_done(void *data,
 }
 
 static void surface_handle_transform(void *data,
-		struct zext_screencopy_surface_v1 *surface,
+		struct ext_screencopy_surface_v1 *surface,
 		int32_t transform)
 {
 	struct ext_screencopy* self = data;
@@ -274,7 +274,7 @@ static void surface_handle_transform(void *data,
 }
 
 static void surface_handle_ready(void *data,
-		struct zext_screencopy_surface_v1 *surface)
+		struct ext_screencopy_surface_v1 *surface)
 {
 	struct ext_screencopy* self = data;
 
@@ -308,8 +308,8 @@ static void surface_handle_ready(void *data,
 }
 
 static void surface_handle_failed(void *data,
-		struct zext_screencopy_surface_v1 *surface,
-		enum zext_screencopy_surface_v1_failure_reason reason)
+		struct ext_screencopy_surface_v1 *surface,
+		enum ext_screencopy_surface_v1_failure_reason reason)
 {
 	struct ext_screencopy* self = data;
 
@@ -325,8 +325,8 @@ static void surface_handle_failed(void *data,
 		self->cursor_buffer = NULL;
 	}
 
-	if (reason == ZEXT_SCREENCOPY_SURFACE_V1_FAILURE_REASON_INVALID_CURSOR_BUFFER
-	 || reason == ZEXT_SCREENCOPY_SURFACE_V1_FAILURE_REASON_INVALID_MAIN_BUFFER)
+	if (reason == EXT_SCREENCOPY_SURFACE_V1_FAILURE_REASON_INVALID_CURSOR_BUFFER
+	 || reason == EXT_SCREENCOPY_SURFACE_V1_FAILURE_REASON_INVALID_MAIN_BUFFER)
 	{
 		ext_screencopy_init_surface(self);
 	}
@@ -335,7 +335,7 @@ static void surface_handle_failed(void *data,
 }
 
 static void surface_handle_damage(void *data,
-		struct zext_screencopy_surface_v1 *surface,
+		struct ext_screencopy_surface_v1 *surface,
 		uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
 	struct ext_screencopy* self = data;
@@ -344,7 +344,7 @@ static void surface_handle_damage(void *data,
 }
 
 static void surface_handle_cursor_info(void *data,
-		struct zext_screencopy_surface_v1 *surface, const char *name,
+		struct ext_screencopy_surface_v1 *surface, const char *name,
 		int has_damage, int32_t pos_x, int32_t pos_y, int32_t width,
 		int32_t height, int32_t hotspot_x, int32_t hotspot_y)
 {
@@ -362,7 +362,7 @@ static void surface_handle_cursor_info(void *data,
 }
 
 static void surface_handle_cursor_enter(void *data,
-		struct zext_screencopy_surface_v1 *surface, const char *name)
+		struct ext_screencopy_surface_v1 *surface, const char *name)
 {
 	struct ext_screencopy* self = data;
 
@@ -370,7 +370,7 @@ static void surface_handle_cursor_enter(void *data,
 }
 
 static void surface_handle_cursor_leave(void *data,
-		struct zext_screencopy_surface_v1 *surface, const char *name)
+		struct ext_screencopy_surface_v1 *surface, const char *name)
 {
 	struct ext_screencopy* self = data;
 
@@ -378,13 +378,13 @@ static void surface_handle_cursor_leave(void *data,
 }
 
 static void surface_handle_commit_time(void *data,
-		struct zext_screencopy_surface_v1 *surface,
+		struct ext_screencopy_surface_v1 *surface,
 		uint32_t sec_hi, uint32_t sec_lo, uint32_t nsec)
 {
 	// TODO
 }
 
-static struct zext_screencopy_surface_v1_listener surface_listener = {
+static struct ext_screencopy_surface_v1_listener surface_listener = {
 	.buffer_info = surface_handle_buffer_info,
 	.cursor_buffer_info = surface_handle_cursor_buffer_info,
 	.cursor_enter = surface_handle_cursor_enter,
@@ -461,7 +461,7 @@ void ext_screencopy_destroy(struct screencopy* ptr)
 	struct ext_screencopy* self = (struct ext_screencopy*)ptr;
 
 	if (self->surface)
-		zext_screencopy_surface_v1_destroy(self->surface);
+		ext_screencopy_surface_v1_destroy(self->surface);
 	if (self->buffer)
 		wv_buffer_pool_release(self->pool, self->buffer);
 	if (self->cursor_buffer)
